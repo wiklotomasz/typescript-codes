@@ -1,30 +1,14 @@
-enum Role {
-  ADMIN, 
-  READ_ONLY,
-  AUTHOR
+function add(n1: number, n2: number) {
+  return n1 + n2;
 }
 
-
-const person = {
-  name: 'Tomas',
-  age: 30,
-  elo: 11,
-  hobbies: ['sport', 'swim'],
-  role: Role.READ_ONLY
+function printResult(num: number) {
+  console.log('Result: ' + num);
 }
 
-console.log(person.role);
+printResult(add(5, 23));
 
+let combineValues: (a: number, b: number) => number;
+combineValues = add;
 
-let favoriteActivies: any[];
-favoriteActivies = ['test', 4];
-//person.hobbies = [2];
-
-person.name = 'Wiklo';
-
-console.log(favoriteActivies);
-
-let hobby: string;
-for (hobby of person.hobbies) {
-  console.log(hobby);
-}
+console.log(combineValues(2, 3));
