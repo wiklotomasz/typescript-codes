@@ -113,7 +113,7 @@ class ProjectList {
   element: HTMLElement;
   assignedProjects: Project[];
 
-  constructor(private type: string) {
+  constructor(private type: 'active' | 'finished') {
     this.templateElement = document.getElementById(
       "project-list"
     )! as HTMLTemplateElement;
@@ -128,7 +128,14 @@ class ProjectList {
     this.element.id = `${type}-projects`;
 
     projectState.addListener((projects: Project[]) => {
-      this.assignedProjects = projects;
+        const releventProjects = projects.filter(prj => {
+            if (this.type === 'active') {
+                return prj.status === ProjectStatus.Active
+            } else {
+                return prj.status === ProjectStatus.Finished
+            }
+        });
+      this.assignedProjects = releventProjects;
       this.renderProjects();
     });
 
@@ -140,6 +147,8 @@ class ProjectList {
     const listEl = document.getElementById(
       `${this.type}-projects-list`
     )! as HTMLElement;
+    
+    listEl.innerHTML = '';
     for (const prjItem of this.assignedProjects) {
       const listItem = document.createElement("li");
       listItem.textContent = prjItem.title;
