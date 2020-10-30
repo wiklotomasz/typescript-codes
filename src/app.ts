@@ -1,5 +1,8 @@
 // Project Type
-enum ProjectStatus {Active, Finished}
+enum ProjectStatus {
+  Active,
+  Finished,
+}
 class Project {
   constructor(
     public id: string,
@@ -34,11 +37,11 @@ class ProjectState {
 
   addProject(title: string, description: string, numOfPeople: number) {
     const newProject = new Project(
-        Math.random().toString(),
-        title,
-        description,
-        numOfPeople,
-        ProjectStatus.Active
+      Math.random().toString(),
+      title,
+      description,
+      numOfPeople,
+      ProjectStatus.Active
     );
     this.projects.push(newProject);
     for (const listenerFn of this.listeners) {
@@ -106,40 +109,55 @@ function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
   return adjDescriptor;
 }
 
-//Project list class
-class ProjectList {
+// Component Base Class
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLElement;
-  assignedProjects: Project[];
+  hostElement: T;
+  element: U;
 
-  constructor(private type: 'active' | 'finished') {
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    insertAtStart: boolean,
+    newElementId?: string
+  ) {
     this.templateElement = document.getElementById(
-      "project-list"
+      templateId
     )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app")! as HTMLDivElement;
-    this.assignedProjects = [];
+    this.hostElement = document.getElementById(hostElementId)! as T;
 
     const importedNode = document.importNode(
       this.templateElement.content,
       true
     );
-    this.element = importedNode.firstElementChild as HTMLElement;
-    this.element.id = `${type}-projects`;
+    this.element = importedNode.firstElementChild as U;
+    if (newElementId) {
+      this.element.id = newElementId;
+    }
 
-    projectState.addListener((projects: Project[]) => {
-        const releventProjects = projects.filter(prj => {
-            if (this.type === 'active') {
-                return prj.status === ProjectStatus.Active
-            } else {
-                return prj.status === ProjectStatus.Finished
-            }
-        });
-      this.assignedProjects = releventProjects;
-      this.renderProjects();
-    });
+    this.attach(insertAtStart);
+  }
 
-    this.attach();
+  private attach(insertAtStart: boolean) {
+    this.hostElement.insertAdjacentElement(
+      insertAtStart ? "afterbegin" : "beforeend",
+      this.element
+    );
+  }
+
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
+
+//Project list class
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assignedProjects: Project[];
+
+  constructor(private type: "active" | "finished") {
+    super('project-list', 'app', false, `${type}-projects`);
+    this.assignedProjects = [];
+
+    this.configure();
     this.renderContent();
   }
 
@@ -147,8 +165,8 @@ class ProjectList {
     const listEl = document.getElementById(
       `${this.type}-projects-list`
     )! as HTMLElement;
-    
-    listEl.innerHTML = '';
+
+    listEl.innerHTML = "";
     for (const prjItem of this.assignedProjects) {
       const listItem = document.createElement("li");
       listItem.textContent = prjItem.title;
@@ -156,15 +174,25 @@ class ProjectList {
     }
   }
 
-  private renderContent() {
+  renderContent() {
     const listId = `${this.type}-projects-list`;
     this.element.querySelector("ul")!.id = listId;
     this.element.querySelector("h2")!.textContent =
       this.type.toUpperCase() + " PROJECTS";
   }
 
-  private attach() {
-    this.hostElement.insertAdjacentElement("beforeend", this.element);
+  configure() {
+    projectState.addListener((projects: Project[]) => {
+      const releventProjects = projects.filter((prj) => {
+        if (this.type === "active") {
+          return prj.status === ProjectStatus.Active;
+        } else {
+          return prj.status === ProjectStatus.Finished;
+        }
+      });
+      this.assignedProjects = releventProjects;
+      this.renderProjects();
+    });
   }
 }
 

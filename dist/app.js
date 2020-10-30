@@ -79,33 +79,32 @@ function autobind(_, _2, descriptor) {
     };
     return adjDescriptor;
 }
-class ProjectList {
-    constructor(type) {
-        this.type = type;
-        this.templateElement = document.getElementById("project-list");
-        this.hostElement = document.getElementById("app");
-        this.assignedProjects = [];
+class Component {
+    constructor(templateId, hostElementId, insertAtStart, newElementId) {
+        this.templateElement = document.getElementById(templateId);
+        this.hostElement = document.getElementById(hostElementId);
         const importedNode = document.importNode(this.templateElement.content, true);
         this.element = importedNode.firstElementChild;
-        this.element.id = `${type}-projects`;
-        projectState.addListener((projects) => {
-            const releventProjects = projects.filter(prj => {
-                if (this.type === 'active') {
-                    return prj.status === ProjectStatus.Active;
-                }
-                else {
-                    return prj.status === ProjectStatus.Finished;
-                }
-            });
-            this.assignedProjects = releventProjects;
-            this.renderProjects();
-        });
-        this.attach();
+        if (newElementId) {
+            this.element.id = newElementId;
+        }
+        this.attach(insertAtStart);
+    }
+    attach(insertAtStart) {
+        this.hostElement.insertAdjacentElement(insertAtStart ? "afterbegin" : "beforeend", this.element);
+    }
+}
+class ProjectList extends Component {
+    constructor(type) {
+        super('project-list', 'app', false, `${type}-projects`);
+        this.type = type;
+        this.assignedProjects = [];
+        this.configure();
         this.renderContent();
     }
     renderProjects() {
         const listEl = document.getElementById(`${this.type}-projects-list`);
-        listEl.innerHTML = '';
+        listEl.innerHTML = "";
         for (const prjItem of this.assignedProjects) {
             const listItem = document.createElement("li");
             listItem.textContent = prjItem.title;
@@ -118,8 +117,19 @@ class ProjectList {
         this.element.querySelector("h2").textContent =
             this.type.toUpperCase() + " PROJECTS";
     }
-    attach() {
-        this.hostElement.insertAdjacentElement("beforeend", this.element);
+    configure() {
+        projectState.addListener((projects) => {
+            const releventProjects = projects.filter((prj) => {
+                if (this.type === "active") {
+                    return prj.status === ProjectStatus.Active;
+                }
+                else {
+                    return prj.status === ProjectStatus.Finished;
+                }
+            });
+            this.assignedProjects = releventProjects;
+            this.renderProjects();
+        });
     }
 }
 class ProjectInput {
