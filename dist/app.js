@@ -42,6 +42,16 @@ class ProjectState extends State {
     addProject(title, description, numOfPeople) {
         const newProject = new Project(Math.random().toString(), title, description, numOfPeople, ProjectStatus.Active);
         this.projects.push(newProject);
+        this.updateListners();
+    }
+    moveProject(projectId, newStatus) {
+        const projects = this.projects.find(prj => prj.id === projectId);
+        if (projects) {
+            projects.status = newStatus;
+            this.updateListners();
+        }
+    }
+    updateListners() {
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
         }
@@ -114,8 +124,9 @@ class ProjectItem extends Component {
             return `${this.project.people} persons`;
         }
     }
-    dragStartHandler(_) {
-        console.log('DragStart');
+    dragStartHandler(event) {
+        event.dataTransfer.setData('text/plain', this.project.id);
+        event.dataTransfer.effectAllowed = 'move';
     }
     dragEndHandler(_) {
         console.log('DragEnd');
@@ -141,13 +152,17 @@ class ProjectList extends Component {
         this.configure();
         this.renderContent();
     }
-    dragOverHandler(_) {
-        console.log('this.element', this.element);
-        const listEl = this.element.querySelector('ul');
-        console.log('list', listEl);
-        listEl.classList.add('droppable');
+    dragOverHandler(event) {
+        if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+            event.preventDefault();
+            const listEl = this.element.querySelector('ul');
+            listEl.classList.add('droppable');
+        }
     }
-    dropHandler(_) { }
+    dropHandler(event) {
+        const prjId = event.dataTransfer.getData('text/plain');
+        projectState.moveProject(prjId, this.type === 'active' ? ProjectStatus.Active : ProjectStatus.Finished);
+    }
     dragLeaveHandler(_) {
         const listEl = this.element.querySelector('ul');
         listEl.classList.remove('droppable');
@@ -186,6 +201,9 @@ class ProjectList extends Component {
 __decorate([
     autobind
 ], ProjectList.prototype, "dragOverHandler", null);
+__decorate([
+    autobind
+], ProjectList.prototype, "dropHandler", null);
 __decorate([
     autobind
 ], ProjectList.prototype, "dragLeaveHandler", null);
